@@ -103,6 +103,9 @@ function App() {
 
   useEffect(() => { refresh(); }, [token]);
 
+  // Keep action feedback on the page where it was triggered.
+  useEffect(() => { setError(''); setNotice(''); }, [view]);
+
   useEffect(() => { if (!token) return; api('/resume').then(setResumes).catch(()=>{}); api('/learning/roadmap').then(setRoadmap).catch(()=>{}); }, [token]);
 
   useEffect(() => { if (token && view==='AI tutor') loadTutorSessions(); }, [token,view]);
