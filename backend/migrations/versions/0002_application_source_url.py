@@ -9,8 +9,12 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("job_applications", sa.Column("source_url", sa.String(length=1000), server_default="", nullable=False))
+    columns = {column["name"] for column in sa.inspect(op.get_bind()).get_columns("job_applications")}
+    if "source_url" not in columns:
+        op.add_column("job_applications", sa.Column("source_url", sa.String(length=1000), server_default="", nullable=False))
 
 
 def downgrade():
-    op.drop_column("job_applications", "source_url")
+    columns = {column["name"] for column in sa.inspect(op.get_bind()).get_columns("job_applications")}
+    if "source_url" in columns:
+        op.drop_column("job_applications", "source_url")

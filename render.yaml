@@ -1,0 +1,89 @@
+previews:
+  generation: off
+
+databases:
+  - name: careerpilot-db
+    databaseName: careerpilot
+    user: careerpilot
+    plan: 0.1c-256mb
+    region: singapore
+    ipAllowList: []
+
+services:
+  - type: web
+    name: careerpilot-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: singapore
+    plan: 0.5c-512mb
+    healthCheckPath: /api/v1/health
+    disk:
+      name: careerpilot-uploads
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: careerpilot-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: FRONTEND_ORIGIN
+        fromService:
+          name: careerpilot-web
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: UPLOADS_DIR
+        value: /var/data/uploads
+      - key: AI_PROVIDER
+        value: groq
+      - key: AI_MODEL
+        value: openai/gpt-oss-20b
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CODE_EXECUTOR_URL
+        value: https://api.onlinecompiler.io/api/run-code-sync/
+      - key: CODE_EXECUTOR_API_KEY
+        sync: false
+      - key: QDRANT_URL
+        fromService:
+          name: careerpilot-qdrant
+          type: pserv
+          property: hostport
+
+  - type: pserv
+    name: careerpilot-qdrant
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./qdrant.Dockerfile
+    dockerContext: .
+    region: singapore
+    plan: 0.5c-512mb
+    disk:
+      name: careerpilot-vectors
+      mountPath: /qdrant/storage
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: "6333"
+
+  - type: web
+    name: careerpilot-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: 'npm ci && VITE_API_URL="${API_BASE_URL}/api/v1" npm run build'
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: API_BASE_URL
+        fromService:
+          name: careerpilot-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL

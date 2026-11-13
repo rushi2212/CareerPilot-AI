@@ -14,7 +14,10 @@ COLLECTION = "careerpilot_private_docs"
 
 @lru_cache(maxsize=1)
 def qdrant() -> QdrantClient:
-    return QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key or None, timeout=12)
+    url = settings.qdrant_url
+    if not url.startswith(("http://", "https://")):
+        url = f"http://{url}"
+    return QdrantClient(url=url, api_key=settings.qdrant_api_key or None, timeout=12)
 
 
 @lru_cache(maxsize=1)
