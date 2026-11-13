@@ -32,10 +32,7 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: FRONTEND_ORIGIN
-        fromService:
-          name: careerpilot-web
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://career-pilot-ai-nine-psi.vercel.app
       - key: UPLOADS_DIR
         value: /var/data/uploads
       - key: AI_PROVIDER
@@ -49,10 +46,9 @@ services:
       - key: CODE_EXECUTOR_API_KEY
         sync: false
       - key: QDRANT_URL
-        fromService:
-          name: careerpilot-qdrant
-          type: pserv
-          property: hostport
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
 
   - type: pserv
     name: careerpilot-qdrant

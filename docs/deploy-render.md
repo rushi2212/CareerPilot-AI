@@ -18,6 +18,6 @@ Render's static site is free. The API's upload disk stores resumes and source do
 
 ## Environment variables
 
-Render supplies `DATABASE_URL` and `QDRANT_URL` from internal services. The Blueprint generates `SECRET_KEY`, sets `ENVIRONMENT=production`, configures the frontend origin and upload path, and sets `AI_PROVIDER=groq`. Provide the two secret API keys through the Render Blueprint prompt; do not add them to this file or the repository.
+Render supplies `DATABASE_URL`. Set `QDRANT_URL` and `QDRANT_API_KEY` on the API service to the endpoint and key for your Qdrant Cloud cluster. The Blueprint generates `SECRET_KEY`, sets `ENVIRONMENT=production`, allows the deployed Vercel frontend origin, and sets `AI_PROVIDER=groq`. Provide secret keys through Render's environment settings; never commit them to this file or the repository. If you prefer the included private Render Qdrant service, use its internal host and port for `QDRANT_URL` and leave `QDRANT_API_KEY` empty.
 
-The API health check is `GET /api/v1/health`. If using a different static-site hostname, Render's Blueprint reference keeps `FRONTEND_ORIGIN` synced to the deployed site URL.
+The API health check is `GET /api/v1/health`. `FRONTEND_ORIGIN` is set to the Vercel deployment URL; update it in `render.yaml` if that URL changes.
