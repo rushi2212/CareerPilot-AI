@@ -533,8 +533,10 @@ def remove_knowledge_document(document_id:int,user:User=Depends(current_user),db
     if not row:raise HTTPException(status_code=404,detail="Document not found")
     try:delete_document(user.id,row.id)
     except Exception:
-        logger.exception("Knowledge document vector deletion failed")
-        raise HTTPException(status_code=503,detail="Vector database is unreachable; the document was not deleted. Check QDRANT_URL and QDRANT_API_KEY.")
+        # Remove the library entry even during a Qdrant outage. Retrieval below
+        # validates vector hits against live document rows, so leftover points
+        # cannot be shown or used after the document is deleted.
+        logger.exception("Knowledge document vector cleanup failed; deleting the library entry anyway")
     try:
         path=Path(row.stored_path)
         if path.resolve().parent==(Path(settings.uploads_dir).resolve()/"documents") and path.exists():path.unlink()
@@ -565,6 +567,10 @@ def rag_query(payload:RagQueryIn,user:User=Depends(current_user),db:Session=Depe
         logger.exception("Knowledge document retrieval failed; using account-scoped keyword fallback")
         sources=keyword_document_fallback(user.id,payload.query,db,payload.limit)
         retrieval_mode="keyword_fallback"
+    # A Qdrant delete can fail while the document record is still removed.
+    # Discard any orphaned vector hits so deleted documents never reappear.
+    live_document_ids=set(db.scalars(select(UserDocument.id).where(UserDocument.user_id==user.id)))
+    sources=[source for source in sources if source.get("document_id") in live_document_ids]
     if not sources:
         message="No relevant uploaded documents were found for this question."
         if retrieval_mode=="keyword_fallback":message="Vector search is unavailable and no keyword matches were found in your saved documents. Check the Render API logs for the Qdrant retrieval exception."
